@@ -79,7 +79,7 @@ tbody tr{cursor:pointer}
   <div class="card"><h2>餐點費</h2><div id="meal"></div></div>
   <div class="card"><h2 id="ovT"></h2>
     <table><thead><tr><th>月份</th><th>總工時</th><th>國假</th><th>12 切</th><th>餐點費</th></tr></thead><tbody id="ov"></tbody></table></div>
-  <p class="note">依 B 班 12 天輪值循環試算(班別時數含 0.5 小時交接班;國定假日單日最多認列 8 小時,超出併入 12 切;補假出勤全部進 12 切)。2027 年假日依公告;標示「預估」的月份,假日依法定日期與農曆推算,公告後可能調整。元旦與春節額外給予時數及餐費,是依 2027 年 1、2 月的實際給法套用,實際金額以 MyHR 公告為準。</p>
+  <p class="note">依 B 班 12 天輪值循環試算(班別時數含 0.5 小時交接班;國定假日單日最多認列 8 小時,超出併入 12 切;補假出勤全部進 12 切)。2027 至 2030 年假日依行事曆。元旦與春節額外給予時數及餐費,是依 2027 年 1、2 月的實際給法套用,實際金額以 MyHR 公告為準。</p>
 </main>
 <script>
 var CL={A:{n:"新複值 A 班",o:3},B:{n:"新複值 B 班",o:0},C:{n:"新複值 C 班",o:9},D:{n:"新複值 D 班",o:6}},cur="B";
@@ -88,13 +88,14 @@ var GH=[8.5,8.5,7,9.5,9.5,9.5,0,0,9,7.5,7.5,0],DAY=864e5;
 function U(y,m,d){return Date.UTC(y,m-1,d)}
 function wk(t){return new Date(t).getUTCDay()}
 function off(t){var w=wk(t);return w==0||w==6}
-var H={},SP={};
+var H={},SP={},MK={};
 function add(t,n,k){if(!H[t])H[t]={n:n,t:k}}
 var LNY={2027:[2,6],2028:[1,26],2029:[2,13],2030:[2,3]},QM={2026:5,2027:5,2028:4,2029:4,2030:5};
 var DW={2026:[6,19],2027:[6,9],2028:[5,28],2029:[6,16],2030:[6,5]},MA={2026:[9,25],2027:[9,15],2028:[10,3],2029:[9,22],2030:[9,12]};
 [2026,2027,2028,2029,2030].forEach(function(y){
-  var q=QM[y],b=[[U(y,1,1),"開國紀念日"],[U(y,2,28),"和平紀念日"],[U(y,4,q==4?3:4),"兒童節"],[U(y,4,q),"清明節"],[U(y,5,1),"勞動節"],
+  var q=QM[y],b=[[U(y,1,1),"開國紀念日"],[U(y,2,28),"和平紀念日"],[U(y,4,q),q==4?"清明節兒童節":"清明節"],[U(y,5,1),"勞動節"],
   [U(y,DW[y][0],DW[y][1]),"端午節"],[U(y,MA[y][0],MA[y][1]),"中秋節"],[U(y,9,28),"教師節"],[U(y,10,10),"國慶日"],[U(y,10,25),"光復節"],[U(y,12,25),"行憲紀念日"]];
+  if(q==4)add(U(y,4,3),"兒童節補假","補假");else b.push([U(y,4,4),"兒童節"]);
   b.forEach(function(x){add(x[0],x[1],"國假")});
   SP[U(y,1,1)]={h:4,k:"ny"};
   if(LNY[y]){var t0=U(y,LNY[y][0],LNY[y][1]),nm=["小年夜","除夕","春節初一","春節初二","春節初三","春節初四","春節初五"];
@@ -108,7 +109,7 @@ function calc(y,m){
   var n=new Date(Date.UTC(y,m,0)).getUTCDate(),G=0,N=0,C=0,hb=0,ext=0,n3=0,n1=0,ex=[],ev=[],ds=[];
   for(var d=1;d<=n;d++){
     var t=U(y,m,d),si=((Math.round((t-U(2026,9,1))/DAY)+CL[cur].o)%12+12)%12,g=GH[si],h=H[t],w=wk(t);
-    if(w>0&&w<6&&!h)C+=8;
+    if((w>0&&w<6&&!h)||MK[t])C+=8;
     ds.push({d:d,w:w,s:CY[si],h:h?h.t:""});
     if(!g)continue;
     N++;G+=g;var net=g-.5;
@@ -118,7 +119,8 @@ function calc(y,m){
     var sp=SP[t];
     if(sp&&(sp.k=="sp"||si<3)){add2=sp.h;ext+=add2;
       if(si<3)ex.push([sp.k=="ny"?"元旦午晚餐費":"春節午晚餐費",150]);
-      else if(si<6&&sp.k=="sp")ex.push(["春節下班早餐費",75])}
+      else if(si<6&&sp.k=="sp")ex.push(["春節下班早餐費",75]);
+      else if(si>=8&&sp.k=="sp")ex.push(["春節午晚餐費",150])}
     if(h||add2)ev.push({d:m+"/"+d,n:h?h.n:(sp.k=="ny"?"元旦":""),k:h?h.t:"",s:CY[si],net:net,rec:rec,add:add2});
   }
   var A=G-.5*N,B=.5*N,tot=G-C,rest=tot-hb,f=Math.floor(rest/12),r=rest-f*12;
@@ -138,7 +140,7 @@ function show(y,m){
     b.onclick=function(){show(yy,yy==2026?Math.max(m,9):m)};$("yr").appendChild(b)});
   $("chips").innerHTML="";
   for(i=(y==2026?9:1);i<=12;i++)(function(i){var b=document.createElement("button");b.className="chip";b.textContent=i+"月";b.setAttribute("aria-pressed",i==m);b.onclick=function(){show(y,i)};$("chips").appendChild(b)})(i);
-  $("mTitle").textContent=y+" 年 "+m+" 月(民國 "+(y-1911)+" 年)";$("est").hidden=y<2028;
+  $("mTitle").textContent=y+" 年 "+m+" 月(民國 "+(y-1911)+" 年)";$("est").hidden=true;
   $("big").innerHTML=F(d.tot)+'<span>小時 休息日與國假總工時</span>';
   $("sum").textContent="國定假日出勤 "+F(d.hb)+" 小時,進 12 切 "+F(d.rest)+" 小時"+(d.ext?";另外額外給予國假 "+F(d.ext)+" 小時":"")+"。";
   var cal="";["日","一","二","三","四","五","六"].forEach(function(x){cal+='<div class="wd">'+x+'</div>'});
